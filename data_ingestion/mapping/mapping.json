@@ -1,0 +1,61 @@
+{
+    "settings": {
+      "index": {
+        "number_of_shards": 3,
+        "number_of_replicas": 1,
+        "analysis": {
+          "analyzer": {
+            "autocomplete": {
+              "type": "custom",
+              "tokenizer": "standard",
+              "filter": ["lowercase", "autocomplete_filter"]
+            },
+            "standard_analyzer": {
+              "type": "custom",
+              "tokenizer": "standard",
+              "filter": ["lowercase"]
+            }
+          },
+          "filter": {
+            "autocomplete_filter": {
+              "type": "edge_ngram",
+              "min_gram": 2,
+              "max_gram": 20
+            }
+          },
+          "normalizer": {
+            "lowercase_normalizer": {
+              "type": "custom",
+              "filter": ["lowercase"]
+            }
+          }
+        }
+      }
+    },
+    "mappings": {
+      "properties": {
+        "Name": {
+          "type": "text",
+          "analyzer": "autocomplete",
+          "search_analyzer": "standard"
+        },
+        "Genres": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        },
+        "Actors": {
+          "type": "text",
+          "analyzer": "standard_analyzer"
+        },
+        "Director": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        },
+        "Description": {
+          "type": "text",
+          "analyzer": "standard"
+        }
+      }
+    }
+  }
+  
