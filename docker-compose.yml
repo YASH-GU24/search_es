@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.5
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ingest.geoip.downloader.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsSL http://elasticsearch:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.5
+    container_name: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    restart: unless-stopped
+    
+  fastapi_server:
+    build: ./fastapi_server
+    container_name: fastapi_server
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - SERVER_TIMEOUT=60000
+    restart: unless-stopped
+
+  data_ingestion:
+    build: ./data_ingestion
+    container_name: data_ingestion
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./dataset:/dataset
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    command: ["python", "/app/ingest.py"]
+    restart: on-failure
+
+volumes:
+  esdata:
+    driver: local
